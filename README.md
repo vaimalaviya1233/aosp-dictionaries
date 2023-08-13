@@ -15,26 +15,30 @@ In the experimental dictionaries, names are typically missing as they don't pass
 A "potentially_offensive" attribute is added for some words, which sometimes seems unnecessary. Currently this is coming from the "nosuggest" attribute of the used _hunspell_ dictionaries, which occurs for offensive words as well as for weird / rare word forms.
 Other flags are currently missing, same for shortcuts (e.g. ill -> I'll or écoeuré -> écœuré, as found in AOSP dictionaries).
 
+An empty dictionary is available in dictionaries/empty.dict.
+
 -----
 
-`wordlist.combined` file infos (mostly guessed, didn't find documentation):
+`wordlist.combined` file infos (from wordlists/sample.combined and guessed):
 * header is necessary
   * format like `dictionary=main:en_us,locale=en_US,description=English (US),date=1414726260,version=54`
-  * all of these fields are necessary, though `description` is not used
+  * all of these fields are necessary, though `description` may not be shown to the user
+  * `version` should be greater than 18 for the dictionary to work with all AOSP keyboards (not necessary for https://github.com/Helium314/openboard though)
   * German dictionaries also have `REQUIRES_GERMAN_UMLAUT_PROCESSING=1`
 * each word is in a line like ` word=re,f=0,flags=abbreviation,originalFreq=99,possibly_offensive=true`
   * `word` is the word (necessary)
-  * `f` is frequency, from 0 to 255(?) (necessary)
+  * `f` is the logarithm of word frequency, integer from 0 to 255 (necessary)
     * higher value is more likely to get suggested / corrected
     * special value `whitelist`, possibly equal to 15
-    * `f=0` will not be suggested if bad words are blocked, and will never be added to user history
+    * `f=0` will not be suggested if bad words are blocked, but will not be considered a typo. Such a word will never be added to user history
       * possible bug: words with `possibly_offensive=true` and `f=0` will be suggested when not blocking offensive words, but other words with `f=0` are still not suggested
   * `originalFreq`: unclear, is this used?
   * `flags`: `medical`, `technical`, `hand-added`, `babytalk`, `abbreviation`, `offensive`, `technical`, `nonword`, and probably more: are they used for anything?
   * `possibly_offensive=true` stops the word from being suggested when blocking offensive words
   * `not_a_word=true` will not be suggested, use together with `shortcut`
   * `shortcut=<s>` (below a `<word>`) will suggest `<s>` when the `<word>` is typed
-    * which `f` to use? maybe only 0-14 and `whitelist` allowed
-    * what does `f` do here?
+    * needs to have `f` with values from 0 to 14, or the special value `whitelist`
+    * what does `whitelist` actually do?
   * `bigram=<b>` (below a `<word>`) will suggest `<b>` as next word before typing any letters
-    * what does `f` do here? Looks like 1, 2, and 3 are used for the usual 3 bigram entries
+    * needs to have `f`
+    * the value of `f` should be higher than the `f` for the `<word>`, but the available AOSP wordlist for US English actually uses 1, 2 and 3 for the 3 bigram suggestions (still seems to work)
