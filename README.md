@@ -2,9 +2,10 @@ This repository contains dictionaries for AOSP keyboard and compatible apps, as 
 Use [`dicttool_aosp.jar`](https://github.com/remi0s/aosp-dictionary-tools) and run `java -jar dicttool_aosp.jar makedict -s <language>_wordlist.combined -d main_<language>.dict`
 
 Source of the word lists:
-* `wordlists/ar_wordlist.combined`: https://github.com/remi0s/aosp-dictionary-tools/blob/master/dictsCreated/WikiAndOpenSubtitles/ar_wordlist.combined
-* `wordlists/he_wordlist.combined`: https://github.com/Hananel-Hazan/aosp-dictionary-tools/blob/master/hebrew-hspell.txt.combined.new
-* `wordlists/es_GL_wordlist.combined`: https://github.com/chavaone/openboard/blob/master/dictionaries/es_GL_wordlist.combined.gz
+* `wordlists/ar_wordlist.combined.gz`: https://github.com/remi0s/aosp-dictionary-tools/blob/master/dictsCreated/WikiAndOpenSubtitles/ar_wordlist.combined
+* `wordlists/he_wordlist.combined.gz`: https://github.com/Hananel-Hazan/aosp-dictionary-tools/blob/master/hebrew-hspell.txt.combined.new
+* `wordlists/es_GL_wordlist.combined.gz`: https://github.com/chavaone/openboard/blob/master/dictionaries/es_GL_wordlist.combined.gz
+* `wordlists/tok_wordlist.combined.gz`: https://codeberg.org/Helium314/aosp-dictionaries/issues/1 (CC by-sa 3.0 and 4.0 combined license)
 * all others in `wordlists`: https://github.com/openboard-team/openboard/tree/master/dictionaries, most of these are default AOSP keyboard wordlists
 * `wordlists_experimental/en_emoji.combined`: adapted from [gemoji](https://github.com/github/gemoji/blob/master/db/emoji.json)
 * all others in `wordlists_experimental`: created using [`create_wordlist_from_sentences.py`](create_wordlist_from_sentences.py), using word lists available at https://wortschatz.uni-leipzig.de/en/download/ (under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license)
