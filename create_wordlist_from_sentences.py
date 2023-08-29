@@ -338,6 +338,8 @@ class wordlist:
     #  using main also overrides any built-in dictionary in my version of OpenBoard
     # locale should be in compatible format (e.g. en, en_US, fr, fr_CA,...)
     def create_android_word_list(self, file_path, dict_type: str, locale: str, description: str, version: int):
+        if version < 18:
+            print("warning: dictionaries with version < 18 may be ignored by some AOSP-based keyboard apps")
         with open(file_path, 'w') as f:
             t = int(time.time())
             # e.g. dictionary=main:en_us,locale=en_US,description=English (US),date=1414726260,version=54
@@ -422,7 +424,7 @@ def example_1():
     w = wordlist(dictionary=d)
     w.add_sentence_file("/home/user/eng_news_2020_100K-sentences.txt",
                         add_unknown_words=False)  # will only add words that pass the spell check
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 1)
+    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
 
 
 # use existing dictionary for spell check
@@ -436,7 +438,7 @@ def example_2():
     # unmunched cache not necessary for english, but helps for e.g. german or czech
     w.add_unmunched_dictionary(unmunched_cache="/home/user/en_unmunched.txt")  # adds all words with frequency 1
     w.add_sentence_file("/home/user/eng_news_2020_100K-sentences.txt", add_unknown_words=False)
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 1)
+    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
 
 
 # don't use a dictionary, only a word list
@@ -445,7 +447,7 @@ def example_2():
 def example_3():
     w = wordlist()
     w.add_word_file("/home/user/some_word_list.txt")
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 1)
+    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
 
 
 # don't use a dictionary, but provide a word list
@@ -454,7 +456,7 @@ def example_4():
     w = wordlist()
     w.add_word_file("/home/user/some_word_list.txt")
     w.add_sentence_file("/home/user/eng_news_2020_100K-sentences.txt", add_unknown_words=False)
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 1)
+    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
 
 
 # don't use a dictionary, but a list of sentences
@@ -463,4 +465,4 @@ def example_5():
     w = wordlist()
     w.add_sentence_file("/home/user/eng_news_2020_100K/eng_news_2020_100K-sentences.txt",
                         add_unknown_words=True)  # add all words to the word list, except some obvious non-words
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 1)
+    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)

@@ -24,7 +24,7 @@ An empty dictionary is available in dictionaries/empty.dict.
 * header is necessary
   * format like `dictionary=main:en_us,locale=en_US,description=English (US),date=1414726260,version=54`
   * all of these fields are necessary, though `description` may not be shown to the user
-  * `version` should be greater than 18 for the dictionary to work with all AOSP keyboards (not necessary for https://github.com/Helium314/openboard though)
+  * **Note:** `version` should be greater than 18 for the dictionary to work with all AOSP keyboards (not necessary for https://github.com/Helium314/openboard though)
   * German dictionaries also have `REQUIRES_GERMAN_UMLAUT_PROCESSING=1`
 * each word is in a line like ` word=re,f=0,flags=abbreviation,originalFreq=99,possibly_offensive=true`
   * `word` is the word (necessary)
