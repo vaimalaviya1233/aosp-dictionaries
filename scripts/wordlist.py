@@ -1,10 +1,11 @@
 #!/bin/python
 import math
 import os
+import sys
 import time
 import regex
 from spylls.hunspell import Dictionary
-from wordlist_combined import WordlistCombined, DictionaryHeader, WordAttributes
+from .wordlist_combined import WordlistCombined, DictionaryHeader, WordAttributes
 
 # todo:
 #  maybe ignore compound words like 'long-term'? will android actually suggest them?
@@ -346,11 +347,16 @@ class Wordlist:
         min_next_word_count_for_bigram = 2  # just a single occurrence is not enough
 
         (min_count, max_count) = min_max_counts(self.word_infos)
+        if max_count == 0:
+            print("Warning: created WordlistCombined is empty")
+            return WordlistCombined(header=header)
         min_f = math.log(min_count)
         f_diff = max(math.log(max_count) - min_f, 1)
         wordlist = WordlistCombined(header=header)
 
         for word, infos in self.word_infos.items():
+            if regex.search(r"\d", word):
+                continue  # this is valid for Wordlist, but not usable in Android, as digits area not seen as parts of a word
             f = math.log(infos["count"])
             attributes = WordAttributes()
             attributes.f = int((f - min_f) * (max_frequency - min_frequency) / f_diff + min_frequency)
@@ -400,7 +406,7 @@ def hun_loc(loc: str) -> str:
         return loc
 
 
-def find_dict(loc: str) -> Dictionary | None:
+def find_dict(loc: str) -> Dictionary:
     try:
         d = Dictionary.from_system(loc)
         return d
@@ -414,14 +420,12 @@ def find_dict(loc: str) -> Dictionary | None:
         pass
     try:
         import phunspell
-        dict_path = f"{phunspell.__path__}/data/dictionary/"
+        dict_path = f"{phunspell.__path__[0]}/data/dictionary/"
     except:
-        print("phunspell directory not found")
-        return None
+        raise FileNotFoundError("dictionary not found")
     language = loc.split("_")[0]
     if os.path.isdir(f"{dict_path}/{language}"):
         return Dictionary.from_files(f"{dict_path}/{language}/{h_loc}")
-    elif os.path.isdir(f"{dict_path}/{hun_dictlocale}"):
-        return Dictionary.from_files(f"{dict_path}/{hun_dictlocale}/{h_loc}")
-    print("dictionary not found")
-    return None
+    elif os.path.isdir(f"{dict_path}/{h_loc}"):
+        return Dictionary.from_files(f"{dict_path}/{h_loc}/{h_loc}")
+    raise FileNotFoundError("dictionary not found")

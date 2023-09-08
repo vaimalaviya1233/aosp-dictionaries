@@ -86,6 +86,7 @@ class WordlistCombined:
                 attributes.bigrams[next_word] = bigram_count
                 bigram_count += 1
 
+    # note: be aware that merge_list re-uses attributes of the source list, and may also change them
     def merge_list(
             self,
             source: dict[str, WordAttributes],
@@ -103,6 +104,16 @@ class WordlistCombined:
             if word not in target:
                 if words:
                     target[word] = attributes
+                    if not bigrams:
+                        attributes.bigrams = {}
+                    if not not_a_word:
+                        attributes.not_a_word = False
+                    if not shortcuts:
+                        attributes.shortcuts = {}
+                    if not other:
+                        attributes.unknown = {}
+                    if not possibly_offensive:
+                        attributes.possibly_offensive = False
                 continue
             if f == "overwrite":
                 target[word].f = attributes.f
@@ -133,12 +144,10 @@ class WordlistCombined:
 
     def compile(self, target_path: str, overwrite: bool = True):
         if self.header is None:
-            print("Error: can't compile without header")
-            return
-        dicttool = os.path.join("..", "dicttool_aosp.jar")
+            raise ValueError("Error: can't compile without header")
+        dicttool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dicttool_aosp.jar")
         if not os.path.isfile(dicttool):
-            print("Error: dicttool_aosp.jar not found in parent directory")
-            return
+            raise FileNotFoundError("Error: dicttool_aosp.jar not found in parent directory")
         with tempfile.TemporaryDirectory() as tmpdir:
             if target_path.endswith(".dict"):
                 (target_path, dictfilename) = os.path.split(target_path)
@@ -150,7 +159,7 @@ class WordlistCombined:
                 return
             filename = os.path.join(tmpdir, f"{self.header.locale.lower()}_{self.header.type}.combined")
             self.write_to_file(filename)
-            execute = f"java -jar {dicttool} makedict -s {filename} -d {dictfile}"
+            execute = f"java -jar {dicttool} makedict -s {filename} -d {dictfile} > /dev/null"
             os.system(execute)
             if not os.path.exists(target_path):
                 os.mkdir(target_path)

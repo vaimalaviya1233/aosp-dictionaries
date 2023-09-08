@@ -6,6 +6,7 @@ Source of the word lists:
 * `wordlists/he_wordlist.combined.gz`: https://github.com/Hananel-Hazan/aosp-dictionary-tools/blob/master/hebrew-hspell.txt.combined.new
 * `wordlists/es_GL_wordlist.combined.gz`: https://github.com/chavaone/openboard/blob/master/dictionaries/es_GL_wordlist.combined.gz
 * `wordlists/tok_wordlist.combined.gz`: https://codeberg.org/Helium314/aosp-dictionaries/issues/1 (CC by-sa 3.0 and 4.0 combined license)
+* `wordlists/ca_wordlist.combined.gz`: https://codeberg.org/Helium314/aosp-dictionaries/pulls/3
 * all others in `wordlists`: https://github.com/openboard-team/openboard/tree/master/dictionaries, most of these are default AOSP keyboard wordlists
 * `wordlists_experimental/en_emoji.combined`: adapted from [gemoji](https://github.com/github/gemoji/blob/master/db/emoji.json)
 * all others in `wordlists_experimental`: created using [`wordlist.py`](scripts/wordlist.py) and [`wordlist_combined.py`](scripts/wordlist_combined.py), using word lists available at https://wortschatz.uni-leipzig.de/en/download/ (under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license)
@@ -14,7 +15,7 @@ The python scripts is still experimental, rather slow and may produce bad dictio
 
 In the experimental dictionaries, names are typically missing as they don't pass the _hunspell_ spellcheck.
 A `possibly_offensive` attribute is added for some words, which sometimes seems unnecessary. Currently this is coming from the "nosuggest" attribute of the used _hunspell_ dictionaries, which occurs for offensive words as well as for weird / rare word forms.
-Furthermore, `possibly_offensive` words and `shortcut`s are taken from Android wordlists for the same locale. Other flags are currently missing.
+Furthermore, `possibly_offensive` words and `shortcut`s are taken from Android wordlists for the same locale (existing dictionary merged using default options except `f="overwrite", bigrams=False, other=False`). Other flags are currently missing.
 
 An empty dictionary is available in dictionaries/empty.dict.
 
