@@ -3,24 +3,11 @@ import math
 import os
 import time
 import regex
-import copy
 from spylls.hunspell import Dictionary
+from wordlist_combined import WordlistCombined, DictionaryHeader, WordAttributes
 
-# issues:
-# for english got 'i' as word (shouldn't it be 'I' only? or is 'i' the imaginary number?)
-# potentially_offensive is not set, where to get info? parse android dicts?
-# maybe ignore compound words like 'long-term'? will android actually suggest them?
-
-# maybe useful
-# https://wortschatz.uni-leipzig.de/en/download/
-#  really useful source of sentences / fragments, but should be checked against dictionaries as they are taken from news / web
-# https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists
-#  word frequency lists linked, in some cases there are also sentence lists
-# https://github.com/wooorm/dictionaries
-#  hunspell dicts, are they the same as the one included in phunspell?
-
-# memory usage depends on word lists and language, expect 0.5 - 2 GB
-# for some reason, Italian requires 4 GB for unmunch
+# todo:
+#  maybe ignore compound words like 'long-term'? will android actually suggest them?
 
 
 # from https://github.com/zverok/spylls/blob/master/examples/unmunch.py
@@ -100,59 +87,68 @@ def unmunch_dictionary(dictionary: Dictionary) -> set[str]:
     return result
 
 
-class wordlist:
+class Wordlist:
     def __init__(self,
-                 # spylls dictionary
-                 dictionary: Dictionary | None = None,
-                 # words that should be ignored, typically (international) names we don't want in a language word list
-                 neutral_words: set[str] | None = None):
-        self.dictionary = dictionary
-        self.dict_words: set[str] = set()
-        if neutral_words is None:
-            self.neutral_words = set()
+                 # spylls dictionary, or locale or path
+                 dictionary: Dictionary | str | None = None,
+                 # words that should be ignored, typically (international) names we don't want in a language word list,
+                 #  can also be common issues, e.g. "i" is recommended for English as usually "I" is meant, but "i" is
+                 #  correct too according to spylls/hunspell
+                 ignore_words: set[str] | None = None
+                 ):
+        if isinstance(dictionary, str):
+            if "/" in dictionary:
+                self.dictionary = Dictionary.from_files(dictionary)
+            else:
+                self.dictionary = find_dict(dictionary)
         else:
-            self.neutral_words = neutral_words
-    # number of identified words
-    count = 0
+            self.dictionary = dictionary
+        self.dict_words: set[str] = set()
+        if ignore_words is None:
+            self.ignore_words = set()
+        else:
+            self.ignore_words = ignore_words
+        # number of identified words
+        self.count = 0
 
-    # number of words used for frequency
-    count_valid = 0
+        # number of words used for frequency
+        self.count_valid = 0
 
-    # words to ignore, as they should be in some additional dictionary (mostly names)
-    # these are not counted as valid or invalid, and not used for next-word data
-    neutral_word_count = 0
+        # words to ignore, as they should be in some additional dictionary (mostly names)
+        # these are not counted as valid or invalid, and not used for next-word data
+        self.ignore_word_count = 0
 
-    # words detected as invalid, these are mostly names and capitalized words (possibly also part of names)
-    invalid_words: set[str] = set()
-    not_words: set[str] = set()
+        # words detected as invalid, these are mostly names and capitalized words (possibly also part of names)
+        self.invalid_words: set[str] = set()
+        self.not_words: set[str] = set()
 
-    # unclear words with more than one match group in above regex
-    # check and decide in the end what to do
-    weird_things: set[str] = set()
+        # unclear words with more than one match group in above regex
+        # check and decide in the end what to do
+        self.weird_things: set[str] = set()
 
-    # for each word, contains a dict with:
-    #  count: int (always)
-    #  next: dict[str, int] (not always)
-    #   how often the word is followed by some others (next_word, count)
-    #  nosuggest: bool (usually only if True, as determined by hunspell dict)
-    word_infos: dict = {}
+        # for each word, contains a dict with:
+        #  count: int (always)
+        #  next: dict[str, int] (not always)
+        #   how often the word is followed by some others (next_word, count)
+        #  nosuggest: bool (usually only if True, as determined by hunspell dict)
+        self.word_infos: dict = {}
 
     # regex for that kicks out things that are definitely not words
     # next word will be treated as ngram start
-    # allow latin letters, and ' and - (but not at start/end)
+    # allow letters, and ' and - (but not at start/end)
     possible_word_regex = r"(?!['-])([\p{L}\d'-]+)(?<!['-])"  # \p{L} requires regex, not re
 
-    # adds words that are valid according to dictionary
+    # adds words that are valid according to dictionary (hunspell "unmunch")
     # this is useful for adding many word form that are valid but not used frequently
-    def add_unmunched_dictionary(self, unmunched_cache: str | None = None):
+    def add_words_from_dictionary(self, dict_word_cache_file: str | None = None):
         unmunched: set[str] = set()
-        if unmunched_cache is not None and os.path.isfile(unmunched_cache):
+        if dict_word_cache_file is not None and os.path.isfile(dict_word_cache_file):
             try:
-                with open(unmunched_cache) as f:
+                with open(dict_word_cache_file) as f:
                     for w in f:
                         unmunched.add(w.strip())
             except:
-                print(f"error reading {unmunched_cache}")
+                print(f"error reading {dict_word_cache_file}")
         if len(unmunched) == 0:
             s = unmunch_dictionary(self.dictionary)
             # unmunch may create word fragments
@@ -167,16 +163,16 @@ class wordlist:
                         unmunched.add(word)
                     elif self.dictionary.lookuper(word, capitalization=False, allow_nosuggest=True):
                         unmunched.add(f"nosuggest:{word}")
-            if unmunched_cache is not None:
+            if dict_word_cache_file is not None:
                 try:
-                    with open(unmunched_cache, 'w') as f:
+                    with open(dict_word_cache_file, 'w') as f:
                         f.writelines([str(i) + '\n' for i in unmunched])
                 except:
-                    print(f"could not write to {unmunched_cache}")
+                    print(f"could not write to {dict_word_cache_file}")
 
         count = 0
         for word in unmunched:
-            if word not in self.word_infos:
+            if word not in self.ignore_words and word not in self.word_infos:
                 if word.startswith("nosuggest:"):
                     word = word[10:]
                     self.add_word(word, True)
@@ -220,6 +216,11 @@ class wordlist:
                 # don't put numbers info not_words
                 previous_word = None
                 continue
+            if "--" in word:
+                # words with "--" are seen as valid by spylls/hunspell, but we don't want them
+                self.invalid_words.add(word)
+                previous_word = None
+                continue
             if not regex.search(r"\p{L}", word):
                 # no letters, no word (but ngram ends here)
                 self.not_words.add(word)
@@ -241,8 +242,8 @@ class wordlist:
             if not full_word.startswith(word):
                 previous_word = None
 
-            if word in self.neutral_words:
-                self.neutral_word_count += 1
+            if word in self.ignore_words:
+                self.ignore_word_count += 1
                 previous_word = None
                 continue
 
@@ -262,7 +263,7 @@ class wordlist:
                         previous_word = None
                         continue
                     if not valid:
-                        if previous_word is not None:
+                        if previous_word is not None:  # otherwise uppercase at sentence start would end up here
                             self.invalid_words.add(word)
                         previous_word = None
                         continue
@@ -330,139 +331,97 @@ class wordlist:
         with open(filename) as f:
             for line in f:
                 for word in line.split():
+                    re_find = regex.findall(self.possible_word_regex, word)
+                    if len(re_find) == 0:
+                        continue
+                    word = re_find[0]
                     self.add_word(word)
 
-    # dicts need all the input, but only type and locale are relevant
-    # type can be any ASCII string, but typically main is used
-    #  note that only one dict can be loaded for each type
-    #  using main also overrides any built-in dictionary in my version of OpenBoard
-    # locale should be in compatible format (e.g. en, en_US, fr, fr_CA,...)
-    def create_android_word_list(self, file_path, dict_type: str, locale: str, description: str, version: int):
-        if version < 18:
-            print("warning: dictionaries with version < 18 may be ignored by some AOSP-based keyboard apps")
-        with open(file_path, 'w') as f:
-            t = int(time.time())
-            # e.g. dictionary=main:en_us,locale=en_US,description=English (US),date=1414726260,version=54
-            header = f"dictionary={dict_type}:{locale.lower()},locale={locale},description={description},date={t},version={version}"
-            if locale.startswith("de"):
-                header += ",REQUIRES_GERMAN_UMLAUT_PROCESSING=1"
-                # any special things for other languages?
-                # russian dict has MULTIPLE_WORDS_DEMOTION_RATE=50 -> what's this?
-            f.write(header + "\n")
-            # deep copy to avoid modifying self.word_infos
-            word_infos = copy.deepcopy(self.word_infos)
-            # todo: check android dicts and maybe some documentation about frequencies
-            add_frequencies(word_infos, 1, 250)
-            filter_bigrams(word_infos, 3, 2)
+    # when adding bigrams, the bigram f will be 1 for the most frequent, 2 for the next, then 3, ...
+    # this creates warnings when compiling the dict, but it's the same for the original en_US AOSP wordlist
+    def create_wordlist_combined(self, add_nosuggest=True, add_bigrams=True,
+                                 header: DictionaryHeader = None) -> WordlistCombined:
+        min_frequency = 1
+        max_frequency = 254
+        min_next_word_count_for_bigram = 2  # just a single occurrence is not enough
 
-            for word, infos in sorted(word_infos.items(), key=lambda item: -item[1]["count"]):
-                frequency = infos["frequency"]
-                if infos.get("nosuggest", False):
-                    # todo: frequency of nosuggest words?
-                    #  in AOSP dicts there are possibly_offensive words with freq > 0, but profanity has frequency 0
-                    #  dictionaryFacilitator will add freq == 0 to history only as invalid words
-                    #   -> what happens here? try and compare "hardcore" (f=112) and "Cid" (f=0)
-                    #  hunspell nosuggest english is insults/slurs, which are f=0 in AOSP dictionaries
-                    #   other possibly_offensive words found in AOSP dictionaries are not flagged at all
-                    #   -> maybe find a way to extract this information from existing dictonaries?
-                    #   but hunspell nosuggest german is also weird/rare word forms
-                    f.write(f" word={word},f={frequency},possibly_offensive=true\n")
-                else:
-                    f.write(f" word={word},f={frequency}\n")
-                if "next" in infos:
-                    for next_word, freq in infos["next"].items():
-                        f.write(f"  bigram={next_word},f={freq}\n")
+        (min_count, max_count) = min_max_counts(self.word_infos)
+        min_f = math.log(min_count)
+        f_diff = max(math.log(max_count) - min_f, 1)
+        wordlist = WordlistCombined(header=header)
+
+        for word, infos in self.word_infos.items():
+            f = math.log(infos["count"])
+            attributes = WordAttributes()
+            attributes.f = int((f - min_f) * (max_frequency - min_frequency) / f_diff + min_frequency)
+            if add_nosuggest and infos.get("nosuggest", False):
+                attributes.possibly_offensive = True
+            if add_bigrams and "next" in infos:
+                bigram_count = 1
+                for next_word, next_count in sorted(infos["next"].items(), key=lambda item: -item[1]):
+                    if next_count < min_next_word_count_for_bigram:
+                        break
+                    attributes.bigrams[next_word] = bigram_count
+                    bigram_count += 1
+            wordlist.words[word] = attributes
+
+        return wordlist
 
 
-# adds a "frequency" entry to each entry of word_infos
-#  frequency is the log of input frequencies, and scaled between min_frequency and max_frequency
-def add_frequencies(word_infos: dict[str, int], min_frequency: int, max_frequency: int):
-    assert max_frequency > min_frequency
+def min_max_counts(word_infos: dict) -> (int, int):
     max_count = 0
     min_count = 2147483647  # simply start with a very large number (int32 max)
-    # first get max and min count
     for _, infos in word_infos.items():
         count = infos["count"]
         if count < min_count:
             min_count = count
         if count > max_count:
             max_count = count
-    min_f = math.log(min_count)
-    fdiff = max(math.log(max_count) - min_f, 1)
-    for word, infos in word_infos.items():
-        f = math.log(infos["count"])
-        infos["frequency"] = int((f - min_f) * (max_frequency - min_frequency) / fdiff + min_frequency)
+    return min_count, max_count
 
 
-# modifies word_infos:
-#  fewer entries per word (limiting to max_bigrams and requiring min_count occurences)
-#  frequency replaced by order, starting at 1 for the most used, like it seems to be in the AOSP en(_US) dictionary
-def filter_bigrams(word_infos: dict, max_bigrams, min_count):
-    for word, infos in word_infos.items():
-        if "next" not in infos:
-            continue
-        bigram = infos["next"]
-        new_bigram = dict()
-        bigram_count = 1
-        for next_word, next_count in sorted(bigram.items(), key=lambda item: -item[1]):
-            if bigram_count > max_bigrams or next_count < min_count:
-                break
-            new_bigram[next_word] = bigram_count
-            bigram_count += 1
-        infos["next"] = new_bigram
+# try guessing (p)hunspell locale for given language
+def hun_loc(loc: str) -> str:
+    if len(loc) == 2:
+        if loc == "cs":
+            return "cs_CZ"
+        if loc == "en":
+            print("using en_US for locale en")
+            return "en_US"
+        elif loc == "bn":
+            return "bn_BD"
+        elif loc == "uk":
+            return "uk_UA"
+        elif loc == "ar":
+            return "ar"
+        else:
+            return loc + "_" + loc.upper()
+    else:
+        return loc
 
 
-# highest frequency first
-def sort_dict_by_count(d: dict[str, int]):
-    return sorted(d.items(), key=lambda item: -item[1])
-
-
-# use existing dictionary for spell check
-# use sentence list to build word list
-def example_1():
-    d = Dictionary.from_files("/home/user/.local/lib/python3.10/site-packages/phunspell/data/dictionary/en/en_US")
-    w = wordlist(dictionary=d)
-    w.add_sentence_file("/home/user/eng_news_2020_100K-sentences.txt",
-                        add_unknown_words=False)  # will only add words that pass the spell check
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
-
-
-# use existing dictionary for spell check
-# use words from unmunched (affix-expanded) dictionary
-#  creates a much larger wordlist in some languages
-# use sentence list to build word list
-#  this is mostly for frequencies and next words, but may also add new words in some languages, e.g. German compund words
-def example_2():
-    d = Dictionary.from_files("/home/user/.local/lib/python3.10/site-packages/phunspell/data/dictionary/en/en_US")
-    w = wordlist(dictionary=d)
-    # unmunched cache not necessary for english, but helps for e.g. german or czech
-    w.add_unmunched_dictionary(unmunched_cache="/home/user/en_unmunched.txt")  # adds all words with frequency 1
-    w.add_sentence_file("/home/user/eng_news_2020_100K-sentences.txt", add_unknown_words=False)
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
-
-
-# don't use a dictionary, only a word list
-# this will produce low-quality suggestions, as word count is the same for all words
-#  but if the word list contains duplicates, it will affect word count
-def example_3():
-    w = wordlist()
-    w.add_word_file("/home/user/some_word_list.txt")
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
-
-
-# don't use a dictionary, but provide a word list
-# use a sentence file for word count and next word suggestions
-def example_4():
-    w = wordlist()
-    w.add_word_file("/home/user/some_word_list.txt")
-    w.add_sentence_file("/home/user/eng_news_2020_100K-sentences.txt", add_unknown_words=False)
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
-
-
-# don't use a dictionary, but a list of sentences
-# android word list may contain spelling errors depending on source of the sentences
-def example_5():
-    w = wordlist()
-    w.add_sentence_file("/home/user/eng_news_2020_100K/eng_news_2020_100K-sentences.txt",
-                        add_unknown_words=True)  # add all words to the word list, except some obvious non-words
-    w.create_android_word_list("/home/user/en_US_wordlist.compiled", "main", "en_US", "english", 18)
+def find_dict(loc: str) -> Dictionary | None:
+    try:
+        d = Dictionary.from_system(loc)
+        return d
+    except LookupError:
+        pass
+    h_loc = hun_loc(loc)
+    try:
+        d = Dictionary.from_system(h_loc)
+        return d
+    except LookupError:
+        pass
+    try:
+        import phunspell
+        dict_path = f"{phunspell.__path__}/data/dictionary/"
+    except:
+        print("phunspell directory not found")
+        return None
+    language = loc.split("_")[0]
+    if os.path.isdir(f"{dict_path}/{language}"):
+        return Dictionary.from_files(f"{dict_path}/{language}/{h_loc}")
+    elif os.path.isdir(f"{dict_path}/{hun_dictlocale}"):
+        return Dictionary.from_files(f"{dict_path}/{hun_dictlocale}/{h_loc}")
+    print("dictionary not found")
+    return None

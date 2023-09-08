@@ -1,5 +1,5 @@
 This repository contains dictionaries for AOSP keyboard and compatible apps, as well as word lists used to create the dictionaries.
-Use [`dicttool_aosp.jar`](https://github.com/remi0s/aosp-dictionary-tools) and run `java -jar dicttool_aosp.jar makedict -s <language>_wordlist.combined -d main_<language>.dict`
+For creating _.dict_ files, run `dicttool_aosp.jar` (taken from https://github.com/remi0s/aosp-dictionary-tools), e.g. `java -jar dicttool_aosp.jar makedict -s <language>_wordlist.combined -d main_<language>.dict` or use the `WordlistCombined.compile` function (see [examples script](scripts/exampls.py))
 
 Source of the word lists:
 * `wordlists/ar_wordlist.combined.gz`: https://github.com/remi0s/aosp-dictionary-tools/blob/master/dictsCreated/WikiAndOpenSubtitles/ar_wordlist.combined
@@ -8,13 +8,13 @@ Source of the word lists:
 * `wordlists/tok_wordlist.combined.gz`: https://codeberg.org/Helium314/aosp-dictionaries/issues/1 (CC by-sa 3.0 and 4.0 combined license)
 * all others in `wordlists`: https://github.com/openboard-team/openboard/tree/master/dictionaries, most of these are default AOSP keyboard wordlists
 * `wordlists_experimental/en_emoji.combined`: adapted from [gemoji](https://github.com/github/gemoji/blob/master/db/emoji.json)
-* all others in `wordlists_experimental`: created using [`create_wordlist_from_sentences.py`](create_wordlist_from_sentences.py), using word lists available at https://wortschatz.uni-leipzig.de/en/download/ (under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license)
+* all others in `wordlists_experimental`: created using [`wordlist.py`](scripts/wordlist.py) and [`wordlist_combined.py`](scripts/wordlist_combined.py), using word lists available at https://wortschatz.uni-leipzig.de/en/download/ (under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license)
 
-[`create_wordlist_from_sentences.py`](create_wordlist_from_sentences.py) is still experimental, rather slow and may produce bad dictionaries in some languages. See the `example` functions on how the script can be used.
+The python scripts is still experimental, rather slow and may produce bad dictionaries in some languages. See the [examples](scripts/examples.py) on how the scripts can be used.
 
 In the experimental dictionaries, names are typically missing as they don't pass the _hunspell_ spellcheck.
-A "potentially_offensive" attribute is added for some words, which sometimes seems unnecessary. Currently this is coming from the "nosuggest" attribute of the used _hunspell_ dictionaries, which occurs for offensive words as well as for weird / rare word forms.
-Other flags are currently missing, same for shortcuts (e.g. ill -> I'll or écoeuré -> écœuré, as found in AOSP dictionaries).
+A `possibly_offensive` attribute is added for some words, which sometimes seems unnecessary. Currently this is coming from the "nosuggest" attribute of the used _hunspell_ dictionaries, which occurs for offensive words as well as for weird / rare word forms.
+Furthermore, `possibly_offensive` words and `shortcut`s are taken from Android wordlists for the same locale. Other flags are currently missing.
 
 An empty dictionary is available in dictionaries/empty.dict.
 
