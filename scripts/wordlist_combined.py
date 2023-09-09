@@ -227,6 +227,11 @@ def read_it(file) -> WordlistCombined:
             continue
         # extract word, frequency, possibly_offensive, not_a_word
         split = line.rstrip().split(",")
+        i = 0
+        # deal with e.g. "word=a, f=5": the space is allowed, but obstructs parsing
+        for s in split:
+            split[i] = s.lstrip()
+            i += 1
         if split[0].startswith(" word="):
             if current_word is not None:
                 word_list[current_word] = current_attributes
