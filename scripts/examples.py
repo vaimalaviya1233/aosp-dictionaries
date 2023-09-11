@@ -57,7 +57,7 @@ def example_and_description():
     )
 
     # read wordlist from file
-    en_us_combined = WordlistCombined.read_from_file("../wordlists/en_US_wordlist.combined.gz")
+    en_us_combined = WordlistCombined.read_from_file("../wordlists/main_en_US.combined.gz")
     # and merge it into the current word list
     combined.merge_list(source=en_us_combined.words,
                         words=True,  # add new words to combined

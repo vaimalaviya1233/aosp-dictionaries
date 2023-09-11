@@ -1,5 +1,7 @@
 This repository contains dictionaries for AOSP keyboard and compatible apps, as well as word lists used to create the dictionaries.
-For creating _.dict_ files, run `dicttool_aosp.jar` (taken from https://github.com/remi0s/aosp-dictionary-tools), e.g. `java -jar dicttool_aosp.jar makedict -s <language>_wordlist.combined -d main_<language>.dict` or use the `WordlistCombined.compile` function (see [examples script](scripts/exampls.py))
+For creating _.dict_ files, you can run `dicttool_aosp.jar` (taken from https://github.com/remi0s/aosp-dictionary-tools), e.g. `java -jar dicttool_aosp.jar makedict -s <language>_wordlist.combined -d main_<language>.dict` or use the `WordlistCombined.compile` function (see [examples script](scripts/exampls.py))
+
+Word lists and dictionaries follow the pattern `<type>_<locale>`, with the file ending being `.dict` for dictionaries and `.combined.gz` for wordlists. Note that word lists are gzip-compressed.
 
 Source of the word lists:
 * `wordlists/ar_wordlist.combined.gz`: https://github.com/remi0s/aosp-dictionary-tools/blob/master/dictsCreated/WikiAndOpenSubtitles/ar_wordlist.combined
@@ -9,6 +11,8 @@ Source of the word lists:
 * `wordlists/ca_wordlist.combined.gz`: https://codeberg.org/Helium314/aosp-dictionaries/pulls/3
 * all others in `wordlists`: https://github.com/openboard-team/openboard/tree/master/dictionaries, most of these are default AOSP keyboard wordlists
 * `wordlists_experimental/en_emoji.combined`: adapted from [gemoji](https://github.com/github/gemoji/blob/master/db/emoji.json)
+* `wordlists_experimental/en_symbols.combined.gz`: https://codeberg.org/Helium314/aosp-dictionaries/pulls/4
+* `wordlists_experimental/fr_symbols.combined.gz`: https://codeberg.org/Helium314/aosp-dictionaries/pulls/5
 * all others in `wordlists_experimental`: created using [`wordlist.py`](scripts/wordlist.py) and [`wordlist_combined.py`](scripts/wordlist_combined.py), using word lists available at https://wortschatz.uni-leipzig.de/en/download/ (under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license)
 
 The python scripts is still experimental, rather slow and may produce bad dictionaries in some languages. See the [examples](scripts/examples.py) on how the scripts can be used.
