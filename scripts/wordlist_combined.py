@@ -119,6 +119,28 @@ class WordlistCombined:
                 attributes.bigrams[next_word] = bigram_count
                 bigram_count += 1
 
+    # replaces existing word
+    def add_word(self, word: str, f: int, possibly_offensive: bool = False):
+        attr = WordAttributes()
+        attr.f = f
+        attr.possibly_offensive = possibly_offensive
+        self.words[word] = attr
+
+    def add_shortcut(self, word: str, f: int, replace_word: bool, shortcut: str, shortcut_f: str, not_a_word: bool):
+        attr = WordAttributes()
+        attr.f = f
+        if not replace_word and word in self.words:
+            attr = self.words[word]
+        attr.shortcuts[shortcut] = shortcut_f
+        attr.not_a_word = not_a_word
+
+    def add_bigram_entry(self, word: str, f: int, replace_word: bool, bigram: str, bigram_f: int):
+        attr = WordAttributes()
+        attr.f = f
+        if not replace_word and word in self.words:
+            attr = self.words[word]
+        attr.bigrams[bigram] = bigram_f
+
     # note: be aware that merge_list re-uses attributes of the source list, and may also change them
     def merge_list(
             self,
