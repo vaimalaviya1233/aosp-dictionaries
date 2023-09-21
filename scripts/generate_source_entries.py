@@ -85,7 +85,7 @@ def info_to_text(info: dict) -> str:
     dict_license = ""
     if "license" in info:
         dict_license = ", license: " + info["license"]
-    return f"* ({language} {header.type})[{dictfile}]: {description}v{header.version}, {timestring}, " \
+    return f"* [{language} {header.type}]({dictfile}): {description}v{header.version}, {timestring}, " \
         f"{wordcount} entries, {bigrams}source: {source}{dict_license}"
 
 
