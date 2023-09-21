@@ -1,7 +1,7 @@
 #!/bin/python
 import os
-from .wordlist_combined import WordlistCombined, DictionaryHeader
-from .wordlist import Wordlist
+from wordlist_combined import WordlistCombined, DictionaryHeader
+from wordlist import Wordlist
 from spylls.hunspell import Dictionary
 
 # maybe useful

@@ -5,7 +5,7 @@ import sys
 import time
 import regex
 from spylls.hunspell import Dictionary
-from .wordlist_combined import WordlistCombined, DictionaryHeader, WordAttributes
+from wordlist_combined import WordlistCombined, DictionaryHeader, WordAttributes
 
 # todo:
 #  maybe ignore compound words like 'long-term'? will android actually suggest them?

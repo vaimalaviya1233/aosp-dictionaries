@@ -51,6 +51,39 @@ class DictionaryHeader:
         return f"dictionary={self.type}:{self.locale.lower()},locale={self.locale},description={self.description}," \
                f"date={self.date},version={self.version}{add}"
 
+    @classmethod
+    def parse(cls, line: str) -> DictionaryHeader | None:
+        split = line.strip().split(",")
+        locale = get_attribute(split, "locale=")
+        if locale is None:
+            print("Error: no locale")
+            return None
+        dict_type = get_attribute(split, "dictionary=")
+        if dict_type is None:
+            print("Error: no dictionary type")
+            return None
+        actual_dict_type = dict_type.split(f":{locale.lower()}")[0]
+        if actual_dict_type == dict_type:
+            print(f"Error: lowercase locale {locale.lower()} not in {dict_type}")
+            return None
+        description = get_attribute(split, "description=")
+        if description is None:
+            print("Warning: no description, using empty string")
+            description = ""
+        version = get_attribute(split, "version=")
+        if version is None or not version.isdigit():
+            print(f"Warning: no valid version: {version}, using 18")
+            version = 18
+        else:
+            version = int(version)
+        date = get_attribute(split, "date=")
+        if date is None or not date.isdigit():
+            print("Warning: no valid date, using current date")
+            date = int(time.time())
+        else:
+            date = int(date)
+        return DictionaryHeader(locale, actual_dict_type, description, version, date)
+
 
 class WordlistCombined:
     def __init__(self, header: DictionaryHeader = None, words: dict[str, WordAttributes] = None):
@@ -175,39 +208,6 @@ class WordlistCombined:
                 return read_it(f)
 
 
-def parse_header(line: str) -> DictionaryHeader | None:
-    split = line.strip().split(",")
-    locale = get_attribute(split, "locale=")
-    if locale is None:
-        print("Error: no locale")
-        return None
-    dict_type = get_attribute(split, "dictionary=")
-    if dict_type is None:
-        print("Error: no dictionary type")
-        return None
-    actual_dict_type = dict_type.split(f":{locale.lower()}")[0]
-    if actual_dict_type == dict_type:
-        print(f"Error: lowercase locale {locale.lower()} not in {dict_type}")
-        return None
-    description = get_attribute(split, "description=")
-    if description is None:
-        print("Warning: no description, using empty string")
-        description = ""
-    version = get_attribute(split, "version=")
-    if version is None or not version.isdigit():
-        print(f"Warning: no valid version: {version}, using 18")
-        version = 18
-    else:
-        version = int(version)
-    date = get_attribute(split, "date=")
-    if date is None or not date.isdigit():
-        print("Warning: no valid date, using current date")
-        date = int(time.time())
-    else:
-        date = int(date)
-    return DictionaryHeader(locale, actual_dict_type, description, version, date)
-
-
 def get_attribute(attributes: list[str], match: str) -> str | None:
     for entry in attributes:
         if entry.startswith(match):
@@ -222,7 +222,7 @@ def read_it(file) -> WordlistCombined:
     current_attributes = None
     for line in file:
         if line.startswith("dictionary"):
-            header = parse_header(line)
+            header = DictionaryHeader.parse(line)
         if len(line) == 0:
             continue
         # extract word, frequency, possibly_offensive, not_a_word
