@@ -404,6 +404,8 @@ def hun_loc(loc: str) -> str:
             return "ko_KR"
         elif loc == "vi":
             return "vi_VN"
+        elif loc == "af":
+            return "af_ZA"
         else:
             return loc + "_" + loc.upper()
     else:
