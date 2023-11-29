@@ -81,9 +81,7 @@ def get_infos(folder: str) -> list[dict]:
 
 def info_to_text(info: dict) -> str:
     header: DictionaryHeader = info["header"]
-    language = info.get("language", None)
-    if language is None:
-        language = langcodes.Language.get(header.locale).display_name('en')
+    language = info.get("language", langcodes.Language.get(header.locale).display_name('en'))
     dictfile = info["dictfile"]
     description = ""
     if len(header.description.strip()) > 0:
@@ -132,7 +130,6 @@ def main():
                 outlines += infolines
             else:
                 outlines.append(line)
-    return
     with open(readmefile, 'w') as f:
         f.writelines(outlines)
 
