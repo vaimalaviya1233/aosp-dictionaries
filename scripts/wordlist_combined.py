@@ -254,7 +254,7 @@ def read_it(file) -> WordlistCombined:
         for s in split:
             split[i] = s.lstrip()
             i += 1
-        if split[0].startswith(" word="):
+        if split[0].startswith("word="):
             if current_word is not None:
                 word_list[current_word] = current_attributes
             current_word = split[0].split("word=")[1]
@@ -274,11 +274,11 @@ def read_it(file) -> WordlistCombined:
                 for attribute in split[1:]:
                     (name, value) = attribute.split("=")
                     current_attributes.unknown[name] = value
-        elif split[0].startswith("  shortcut="):
+        elif split[0].startswith("shortcut="):
             shortcut = split[0].split("shortcut=")[1]
             f = get_attribute(split, "f=")  # can be "whitelist", thus not necessarily int
             current_attributes.shortcuts[shortcut] = f
-        elif split[0].startswith("  bigram="):
+        elif split[0].startswith("bigram="):
             bigram = split[0].split("bigram=")[1]
             f = int(get_attribute(split, "f="))
             current_attributes.bigrams[bigram] = f

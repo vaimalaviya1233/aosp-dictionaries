@@ -5,7 +5,7 @@ import time
 import gzip
 import langcodes
 import pathlib
-from wordlist_combined import DictionaryHeader
+from wordlist_combined import DictionaryHeader, WordlistCombined
 
 # this script generates source entries for the readme from .source files
 # source file format:
@@ -31,14 +31,26 @@ def get_source_file_names(folder: str) -> list[str]:
     return files
 
 
+def create_dict_if_not_exists(dict_path: str, word_list_path: str) -> None:
+    if os.path.isfile(dict_path):
+        return
+    word_list = WordlistCombined.read_from_file(word_list_path)
+    word_list.compile(dict_path)
+
+
 def get_infos(folder: str) -> list[dict]:
     files = get_source_file_names(folder)
     infos = []
     for file in files:
         source_info = {}
         filepath = pathlib.Path(file)
-        source_info["dictfile"] = filepath.parent.name.replace("wordlists", "dictionaries") + "/" + filepath.stem + ".dict"
-        with gzip.open(file.replace(".source", ".combined.gz"), 'rt') as f:
+        word_list_path = file.replace(".source", ".combined.gz")
+        if not os.path.isfile(word_list_path):
+            raise FileNotFoundError("word list does not exist: " + word_list_path)
+        dict_path_relative = filepath.parent.name.replace("wordlists", "dictionaries") + "/" + filepath.stem.lower() + ".dict"
+        create_dict_if_not_exists(filepath.parent.parent.name + "/" + dict_path_relative, word_list_path)
+        source_info["dictfile"] = dict_path_relative
+        with gzip.open(word_list_path, 'rt') as f:
             header = DictionaryHeader.parse(f.readline())
             if header is None:
                 sys.exit(f"could not parse header for {file}")
@@ -49,7 +61,7 @@ def get_infos(folder: str) -> list[dict]:
                     wordcount += 1
             source_info["wordcount"] = wordcount
             for line in f:
-                if line.startswith("  bigram="):
+                if line.trim().startswith("bigram="):
                     source_info["bigrams"] = True
                     break
         with open(file) as f:
@@ -120,6 +132,7 @@ def main():
                 outlines += infolines
             else:
                 outlines.append(line)
+    return
     with open(readmefile, 'w') as f:
         f.writelines(outlines)
 
